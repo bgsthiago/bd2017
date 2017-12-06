@@ -77,6 +77,8 @@ SELECT * FROM destino where cidade = 'Guarulhos';
 
 
 CREATE OR REPLACE FUNCTION atualiza_receita() RETURNS trigger AS $atualiza_receita$
+declare
+	cnt integer;
 	BEGIN
 		IF (TG_OP = 'INSERT') THEN
 			UPDATE empresa
@@ -91,7 +93,10 @@ CREATE OR REPLACE FUNCTION atualiza_receita() RETURNS trigger AS $atualiza_recei
 			WHERE d.cidade = old.cidade and empresa.cnpj = d.cnpj;
 		END IF;
 		IF (TG_OP = 'UPDATE') THEN
-			IF (new.cidade IN (SELECT cidade FROM destino WHERE destino.cnpj IN (SELECT empresa.cnpj FROM destino, empresa WHERE empresa.cnpj = destino.cnpj AND destino.cidade = old.cidade))) THEN
+
+			IF (SELECT 1 FROM destino WHERE cidade = NEW.cidade and destino.cnpj = (SELECT cnpj FROM  destino WHERE  destino.cidade = OLD.cidade)) then
+
+			-- SELECT 1 FROM destino WHERE cidade = new.cidade and destino.cnpj IN (SELECT empresa.cnpj FROM destino, empresa WHERE empresa.cnpj = destino.cnpj AND destino.cidade = old.cidade)) THEN
 				UPDATE empresa
 				SET receita = receita + (new.nro_passageiros * d.valor) - (old.nro_passageiros * d2.valor)
 				FROM destino d, destino d2
@@ -105,11 +110,17 @@ $atualiza_receita$ LANGUAGE plpgsql;
 CREATE TRIGGER atualiza_receita AFTER INSERT OR DELETE OR UPDATE ON viagem
 FOR EACH ROW EXECUTE PROCEDURE atualiza_receita();
 
+
+SELECT 1 FROM destino WHERE cidade = 'Ceilandia' and destino.cnpj 
+= (SELECT cnpj FROM  destino WHERE  destino.cidade = 'Guarulhos')
+
+
+
 drop TRIGGER atualiza_receita2 ON viagem;
 
 INSERT INTO viagem VALUES ('2017-10-22', '9:0:00','ZVV-2015','Guarulhos', 1);
 
-UPDATE viagem SET cidade = 'Guarulhos' WHERE data = '2017-10-22' AND placa = 'ZVV-2015';
+UPDATE viagem SET cidade = 'Samambaia' WHERE data = '2017-10-22' AND placa = 'ZVV-2015';
 
 DELETE from viagem WHERE data = '2017-10-22' AND placa = 'ZVV-2015';
 
@@ -117,3 +128,6 @@ SELECT * from viagem WHERE data = '2017-10-22' AND placa = 'ZVV-2015';
 
 SELECT cpf, funcionario.nome FROM funcionario, empresa
 WHERE (empresa.nome = 'Empresa A' AND funcionario.cnpj = empresa.cnpj);
+
+SELECT count(*) INTO cnt 
+FROM (SELECT 1 FROM destino WHERE cidade = 'Samambaia' and destino.cnpj = (SELECT cnpj FROM  destino WHERE  destino.cidade = 'Guarulhos')) AS aux
