@@ -52,10 +52,14 @@ UPDATE empresa INNER JOIN B ON A.FK_TABELA_B = B.ID
 SET A.FK_TABELA_B = T.idMax;
 
 UPDATE empresa
-SET receita = 12
-FROM empresa e INNER JOIN destino d
-ON (e.cnpj = d.cnpj)
-WHERE d.cidade = 'Guarulhos'
+SET receita = 1200
+FROM destino d
+WHERE d.cidade = 'Guarulhos' and empresa.cnpj = d.cnpj
+
+UPDATE empresa
+SET receita = 120
+FROM empresa e , destino d
+WHERE d.cidade = 'Guarulhos'-- and e.cnpj = d.cnpj
 
 SELECT cnpj FROM destino WHERE cidade = 'Guarulhos'
 
@@ -63,8 +67,53 @@ SELECT * from empresa
 
 SELECT * FROM empresa e INNER JOIN destino d
 ON (e.cnpj = d.cnpj)
-WHERE d.cidade = 'Guarulhos'
+WHERE d.cidade = 'Samambaia'
 
-SELECT * FROM destino;
+SELECT * FROM destino where cidade = 'Samambaia';
+
+SELECT * FROM destino where cidade = 'Guarulhos';
 
 "54.705.902/0001-52"
+
+
+CREATE OR REPLACE FUNCTION atualiza_receita() RETURNS trigger AS $atualiza_receita$
+	BEGIN
+		IF (TG_OP = 'INSERT') THEN
+			UPDATE empresa
+			SET receita = receita + (new.nro_passageiros * d.valor)
+			FROM destino d
+			WHERE d.cidade = new.cidade and empresa.cnpj = d.cnpj;
+		END IF;
+		IF (TG_OP = 'DELETE') THEN
+			UPDATE empresa
+			SET receita = receita - (old.nro_passageiros * d.valor)
+			FROM destino d
+			WHERE d.cidade = old.cidade and empresa.cnpj = d.cnpj;
+		END IF;
+		IF (TG_OP = 'UPDATE') THEN
+			IF (new.cidade IN (SELECT cidade FROM destino WHERE destino.cnpj IN (SELECT empresa.cnpj FROM destino, empresa WHERE empresa.cnpj = destino.cnpj AND destino.cidade = old.cidade))) THEN
+				UPDATE empresa
+				SET receita = receita + (new.nro_passageiros * d.valor) - (old.nro_passageiros * d2.valor)
+				FROM destino d, destino d2
+				WHERE d.cidade = new.cidade and d2.cidade = old.cidade and empresa.cnpj = d.cnpj;
+			END IF;
+		END IF;
+		RETURN NEW;
+	END;
+$atualiza_receita$ LANGUAGE plpgsql;
+
+CREATE TRIGGER atualiza_receita AFTER INSERT OR DELETE OR UPDATE ON viagem
+FOR EACH ROW EXECUTE PROCEDURE atualiza_receita();
+
+drop TRIGGER atualiza_receita2 ON viagem;
+
+INSERT INTO viagem VALUES ('2017-10-22', '9:0:00','ZVV-2015','Guarulhos', 1);
+
+UPDATE viagem SET cidade = 'Guarulhos' WHERE data = '2017-10-22' AND placa = 'ZVV-2015';
+
+DELETE from viagem WHERE data = '2017-10-22' AND placa = 'ZVV-2015';
+
+SELECT * from viagem WHERE data = '2017-10-22' AND placa = 'ZVV-2015';
+
+SELECT cpf, funcionario.nome FROM funcionario, empresa
+WHERE (empresa.nome = 'Empresa A' AND funcionario.cnpj = empresa.cnpj);
