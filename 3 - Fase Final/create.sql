@@ -1,7 +1,7 @@
 -- -----------------------------------------------------
 -- Cria database
 -- -----------------------------------------------------
-CREATE DATABASE "projetoRodoviario"
+CREATE DATABASE "projetoRodoviario";
 
 -- -----------------------------------------------------
 -- Tabela empresa
@@ -45,7 +45,7 @@ CREATE TABLE destino(
   estado char(2) NOT NULL,
   valor float NOT NULL,
   cnpj char(18) REFERENCES empresa(cnpj) ON DELETE CASCADE ON UPDATE CASCADE
-)
+);
 
 -- -----------------------------------------------------
 -- Tabela viagem
@@ -54,7 +54,7 @@ CREATE TABLE carro(
   placa varchar(8) PRIMARY KEY,
   ano char(4) NOT NULL,
   fabricante varchar(60) NOT NULL
-)
+);
 
 -- -----------------------------------------------------
 -- Tabela viagem
@@ -66,8 +66,4 @@ CREATE TABLE viagem(
   cidade char(60) REFERENCES destino(cidade) ON DELETE NO ACTION ON UPDATE CASCADE,
   nro_passageiros integer NOT NULL CHECK (nro_passageiros > 0),
   PRIMARY KEY (data, hora, placa, cidade)
-)
-
--- TO DO LIST:
--- AS REFERENCIAS DA TABELA viagem E SUA SUPERCHAVE (quase pronto)
--- ADICIONAR CODIGO DA VIAGEM PARA NÃO TER UMA SUPERCHAVE GIGANTESCA
+);

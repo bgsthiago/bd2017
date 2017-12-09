@@ -1,51 +1,32 @@
 CREATE OR REPLACE FUNCTION atualiza_receita() RETURNS trigger AS $atualiza_receita$
-$BODY$DECLARE
+declare
+	cnt integer;
 	BEGIN
 		IF (TG_OP = 'INSERT') THEN
 			UPDATE empresa
-      SET receita =  final.receita + (destino.valor * viagem.nro_passageiros)
-      WHERE empresa.cnpj = destino.cnpj;
+			SET receita = receita + (new.nro_passageiros * d.valor)
+			FROM destino d
+			WHERE d.cidade = new.cidade and empresa.cnpj = d.cnpj;
 		END IF;
+		IF (TG_OP = 'DELETE') THEN
+			UPDATE empresa
+			SET receita = receita - (old.nro_passageiros * d.valor)
+			FROM destino d
+			WHERE d.cidade = old.cidade and empresa.cnpj = d.cnpj;
+		END IF;
+		IF (TG_OP = 'UPDATE') THEN
+
+			IF (SELECT 1 FROM destino WHERE cidade = NEW.cidade and destino.cnpj = (SELECT cnpj FROM  destino WHERE  destino.cidade = OLD.cidade)) then
+				UPDATE empresa
+				SET receita = receita + (new.nro_passageiros * d.valor) - (old.nro_passageiros * d2.valor)
+				FROM destino d, destino d2
+				WHERE d.cidade = new.cidade and d2.cidade = old.cidade and empresa.cnpj = d.cnpj;
+			else
+				raise exception 'A nova cidade não é realizada pela empresa que realiza essa rota.'; END IF;
+			END IF;
 		RETURN NEW;
 	END;
 $atualiza_receita$ LANGUAGE plpgsql;
 
-CREATE TRIGGER atualiza_receita AFTER INSERT ON viagem
-	FOR EACH ROW EXECUTE PROCEDURE atualiza_receita();
-
-
--- DROP FUNCTION stackoverflow."calcReceita"();
-
-CREATE OR REPLACE FUNCTION stackoverflow."calcReceita"(p_cnpj CHARACTER)
-  RETURNS real AS
-$BODY$DECLARE
-     v_receita stackoverflow.empresa.receita%TYPE;
-
-    BEGIN
-        /**
-            SELECT SUM(d.valor) INTO v_receita
-            FROM stackoverflow.destino d
-            WHERE cnpj = p_cnpj
-            GROUP BY d.cnpj;
-        */
-            SELECT SUM(receita_produto) INTO v_receita
-            FROM  (
-                SELECT (d.valor * v.nro_passageiro) AS "receita_produto"
-                FROM stackoverflow.destino d
-                INNER JOIN stackoverflow.viagem v USING (cidade)
-                WHERE cnpj = p_cnpj
-            ) AS tb_soma_receita;
-
-        UPDATE stackoverflow.empresa
-        SET receita=v_receita
-        WHERE cnpj=p_cnpj;
-
-     RETURN v_receita;
-    END;$BODY$
-  LANGUAGE plpgsql VOLATILE
-  COST 100;
-ALTER FUNCTION stackoverflow."calcReceita"()
-  OWNER TO postgres;
-
-/** Aqui chama a procedure. */
-SELECT stackoverflow."calcReceita"('00881753000153');
+CREATE TRIGGER atualiza_receita AFTER INSERT OR DELETE OR UPDATE ON viagem
+FOR EACH ROW EXECUTE PROCEDURE atualiza_receita();

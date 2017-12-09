@@ -58,4 +58,4 @@ INSERT INTO viagem(data, hora, placa, cidade, nro_passageiros) VALUES
 ('2019-8-25', '0:0:00','GDH-5620','Timon', 5),
 ('2020-11-10', '14:9:00','XYZ-0011','Macapa', 32),
 ('2017-12-12', '4:48:00','IPU-4678','Caruaru', 13),
-('2017-2-25', '16:41:00','XYZ-0011','Guarulhos', 16),
+('2017-2-25', '16:41:00','XYZ-0011','Guarulhos', 16);

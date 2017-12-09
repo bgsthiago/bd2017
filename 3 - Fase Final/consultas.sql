@@ -21,7 +21,7 @@ GROUP BY empresa.cnpj ORDER BY "numero_de_funcinarios" desc;
 -- -----------------------------------------------------
 -- d) calcular a receita de cada empresa através do custo x número de passageiros
 -- -----------------------------------------------------
-
+SELECT cnpj, nome, receita FROM empresa;
 
 -- -----------------------------------------------------
 -- e) recuperar a lista com todos funcionarios de uma empreas
